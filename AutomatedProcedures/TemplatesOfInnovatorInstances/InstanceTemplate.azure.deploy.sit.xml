@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Instance configVersion="1.0">
+    <credentials>
+    <windowsCredentials serverNames="${Agent.Server.IP}" type="EnvironmentVariable" login="Agent.VM.Admin.Username" password="Agent.VM.Admin.Password" />
+    <windowsCredentials serverNames="${Conversion.Server.IP}" type="EnvironmentVariable" login="Conversion.VM.Admin.Username" password="Conversion.VM.Admin.Password" />
+    <windowsCredentials serverNames="${Innovator.Server.IP}" type="EnvironmentVariable" login="Innovator.VM.Admin.Username" password="Innovator.VM.Admin.Password" />
+    <windowsCredentials serverNames="${OAuth.Server.IP}" type="EnvironmentVariable" login="OAuth.VM.Admin.Username" password="OAuth.VM.Admin.Password" />
+    <windowsCredentials serverNames="${Vault.Server.IP}" type="EnvironmentVariable" login="Vault.VM.Admin.Username" password="Vault.VM.Admin.Password" />
+  </credentials>
+  <components>
+    <database id="Database" depends="Innovator SelfServiceReporting Vault Conversion Agent OAuth">
+      <SqlServer>${MSSQL.Server}</SqlServer>
+      <DatabaseName>${MSSQL.Database.Name}</DatabaseName>
+      <InnovatorLogin>${MSSQL.Innovator.User}</InnovatorLogin>
+      <InnovatorPassword type="EnvironmentVariable">MSSQL.Innovator.Password</InnovatorPassword>
+      <InnovatorUrl>${Innovator.Load.Balancer.Url}/${Name.Of.Innovator.Instance}</InnovatorUrl>
+    </database>
+    <innovator id="Innovator">
+      <ServerName>${Innovator.Server.IP}</ServerName>
+      <InstallationPath>${Path.To.Installed.Innovator}\Innovator</InstallationPath>
+      <VirtualDirectoryPath>/${Name.Of.Innovator.Instance}</VirtualDirectoryPath>
+      <Url>${Innovator.Load.Balancer.Url}/${Name.Of.Innovator.Instance}</Url>
+    </innovator>
+    <ssr id="SelfServiceReporting">
+      <ServerName>${Innovator.Server.IP}</ServerName>
+      <InstallationPath>${Path.To.Installed.Innovator}\SelfServiceReporting</InstallationPath>
+      <VirtualDirectoryPath>/${Name.Of.Innovator.Instance}/SelfServiceReporting</VirtualDirectoryPath>
+      <Url>${Innovator.Load.Balancer.Url}/${Name.Of.Innovator.Instance}/SelfServiceReporting</Url>
+    </ssr>
+    <vault id="Vault">
+      <ServerName>${Vault.Server.IP}</ServerName>
+      <InstallationPath>${Path.To.Installed.Innovator}\VaultServer</InstallationPath>
+      <VirtualDirectoryPath>/${Name.Of.Innovator.Instance}/Vault</VirtualDirectoryPath>
+      <Url>${Vault.Load.Balancer.Url}/${Name.Of.Innovator.Instance}/Vault</Url>
+    </vault>
+    <conversion id="Conversion">
+      <ServerName>${Conversion.Server.IP}</ServerName>
+      <InstallationPath>${Path.To.Installed.Innovator}\ConversionServer</InstallationPath>
+      <VirtualDirectoryPath>/${Name.Of.Innovator.Instance}/ConversionServer</VirtualDirectoryPath>
+      <Url>${Conversion.Load.Balancer.Url}/${Name.Of.Innovator.Instance}/ConversionServer</Url>
+    </conversion>
+    <agent id="Agent">
+      <ServerName>${Agent.Server.IP}</ServerName>
+      <InstallationPath>${Path.To.Installed.Innovator}\AgentService</InstallationPath>
+      <ServiceName>ArasInnovatorAgent_AgentService_${Name.Of.Innovator.Instance}</ServiceName>
+    </agent>
+    <oauth id="OAuth">
+      <ServerName>${OAuth.Server.IP}</ServerName>
+      <InstallationPath>${Path.To.Installed.Innovator}\OAuthServer</InstallationPath>
+      <VirtualDirectoryPath>/${Name.Of.Innovator.Instance}/OAuthServer</VirtualDirectoryPath>
+      <Url>${OAuth.Load.Balancer.Url}/${Name.Of.Innovator.Instance}/OAuthServer</Url>
+    </oauth>
+  </components>
+  <apply>
+    <package>
+      <PathToDeploymentPackage>${Path.To.Deployment.Package.Dir}</PathToDeploymentPackage>
+    </package>
+    <package>
+      <PathToDeploymentPackage>${Path.To.Deployment.Package.Dir}\Sample Data</PathToDeploymentPackage>
+    </package>
+  </apply>
+</Instance>

@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <Deterministic>true</Deterministic>
+    <RootNamespace>Aras.STAF.Customization</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="Settings\ExtentReportsConfig.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Aras.TAF12" Version="*" />
+  </ItemGroup>
+</Project>

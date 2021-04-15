@@ -1,0 +1,16 @@
+{
+	"listName": "Paint Color_S1005",
+	"listDescription": "Paint color for chairs.",
+	"row1_ColumnLabel": "Red",
+	"row1_ColumnValue": "#EF0808",
+	"row1_ColumnOrder": "128",
+	"row1_ColumnInactive": "true",
+	"row2_ColumnLabel": "Blue",
+	"row2_ColumnValue": "#1908EF",
+	"row2_ColumnOrder": "256",
+	"row2_ColumnInactive": "false",
+	"row3_ColumnLabel": "Green",
+	"row3_ColumnValue": "#1A8804",
+	"row3_ColumnOrder": "384",
+	"row3_ColumnInactive": "true"
+}

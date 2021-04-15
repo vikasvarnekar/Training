@@ -1,0 +1,6 @@
+﻿<NUnitProject>
+  <Settings appbase="Output\Aras.ITAF.Tests" processModel="Default" domainUsage="Default" activeconfig="Aras.ITAF.Tests" />
+  <Config name="Aras.ITAF.Tests" binpathtype="Auto" configfile="Aras.ITAF.Tests.dll.config">
+	<assembly path="Aras.ITAF.Tests.dll" />
+  </Config>  
+</NUnitProject>

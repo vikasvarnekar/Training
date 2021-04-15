@@ -1,0 +1,19 @@
+﻿# List of methods that should be excluded from convertation, specified by regular expressions
+# Usage: method [excluded path regex]
+
+# Core package
+method	\\ApplicationCore\\
+method	\\com\\aras\\innovator\\
+method	\\DatabaseIdentifier\\
+method	\\PLM\\
+method	\\PlmEffectivity\\
+
+# Excluded References
+reference	IOM
+reference	InnovatorCore
+reference	SPConnector
+reference	ConversionManager
+reference	FileExchangeService
+reference	Conversion.Base
+reference	Aras.Common
+reference	Aras.Ark.Common

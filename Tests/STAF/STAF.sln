@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30104.148
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aras.STAF.Customization", "STAF\Aras.STAF.Customization\Aras.STAF.Customization.csproj", "{2B36FB22-FBB5-4702-A5BD-6FC2DBD099D5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aras.STAF.Tests", "STAF\Aras.STAF.Tests\Aras.STAF.Tests.csproj", "{60F7546D-B8F8-4D80-B93B-0E882FD075D0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2B36FB22-FBB5-4702-A5BD-6FC2DBD099D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B36FB22-FBB5-4702-A5BD-6FC2DBD099D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B36FB22-FBB5-4702-A5BD-6FC2DBD099D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B36FB22-FBB5-4702-A5BD-6FC2DBD099D5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{60F7546D-B8F8-4D80-B93B-0E882FD075D0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60F7546D-B8F8-4D80-B93B-0E882FD075D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60F7546D-B8F8-4D80-B93B-0E882FD075D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60F7546D-B8F8-4D80-B93B-0E882FD075D0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9E21ECC3-66E0-437C-A10D-415D5CD383C3}
+	EndGlobalSection
+EndGlobal

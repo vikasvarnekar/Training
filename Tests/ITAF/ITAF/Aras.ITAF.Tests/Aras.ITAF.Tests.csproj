@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net472</TargetFramework>
+		<Deterministic>true</Deterministic>
+		<AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+		<OutDir>..\..\..\output\Aras.ITAF.Tests\</OutDir>
+	</PropertyGroup>
+	<ItemGroup>
+		<None Remove="Aras.Net.dll" />
+		<None Remove="IOM.dll" />
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Aras.IntegrationTests.Framework" Version="*" />
+		<PackageReference Include="NUnit" Version="3.12.0" />
+		<PackageReference Include="NUnit3TestAdapter" Version="3.14.0" />
+	</ItemGroup>
+	<ItemGroup>
+		<Reference Include="Aras.Net">
+		  <HintPath>..\..\..\..\Innovator\Server\bin\Aras.Net.dll</HintPath>
+		</Reference>
+		<Reference Include="IOM">
+		  <HintPath>..\..\..\..\src\libraries\IOM\IOM.dll</HintPath>
+		</Reference>
+		<Reference Include="System.Configuration" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Update="App.config">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="MyTemplate.vstemplate">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</None>
+		<None Update="TestCase.xsd">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+	<ItemGroup>
+		<Folder Include="Properties\" />
+	</ItemGroup>
+</Project>

@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+	<configSections>
+		<!-- Common converter service configuration -->
+		<section name="ConversionServer" type="Aras.ConversionFramework.ConversionServer.Configuration.ConversionServerConfigurationSection, Conversion.Base"/>
+		<sectionGroup name="ConverterSettings">
+			<!-- Place here class configuration section definitions for converters -->
+			<section name="ArasCadConverter" type="Aras.ConversionFramework.Converter.Hoops.Configuration.HoopsConverterConfiguration"></section>
+		</sectionGroup>
+	</configSections>
+	<ConversionServer>
+		<InnovatorServer url=""/>
+		<Converters>
+			<Converter name="Aras CAD to PDF Converter" type="Aras.ConversionFramework.Converter.Hoops.HoopsConverter,ArasCadConverter" />
+		</Converters>
+	</ConversionServer>
+	<ConverterSettings>
+		<!-- Place here configuration sections for converters -->
+		<ArasCadConverter>
+			<Application converterPath="${Path.To.Hoops.Converter.Dir}\bin\hoops_converter.exe"/>
+			<Command arguments="--input_pdf_template_file '${Path.To.Hoops.Converter.Dir}\templates\Blank_Template_L.pdf' --output_pdf '%filepath%\%filename%.pdf' --output_png '%filepath%\%filename%.png' --output_png_resolution '150x150' --output_hwf '%filepath%\%filename%.hwf' --output_prc '%filepath%\%filename%.prc' --camera_default --output_logfile '%filepath%\%filename%'" />
+		</ArasCadConverter>
+	</ConverterSettings>
+</configuration>

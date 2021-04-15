@@ -1,0 +1,247 @@
+variables:
+  - group: ContiniousIntegration (Global)
+
+resources:
+  pipelines:
+    - pipeline: DeployInnvovator
+      source: "ContinuousIntegration"
+
+trigger:
+  - none
+
+pool:
+  name: $(agentPoolName)
+
+jobs:
+  - job: DeployPackage
+    timeoutInMinutes: 120
+    steps:
+      - checkout: none
+      - task: PowerShell@2
+        inputs:
+          targetType: "inline"
+          script: |
+            # Getting access token to Azure Key Vault using manage identity
+            $manageIdentityUrl = 'http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https%3A%2F%2Fvault.azure.net'
+            $clientManageIdentity = New-Object System.Net.WebClient;
+            $clientManageIdentity.headers["Metadata"] = "true"
+            $resultManageIdentity = $clientManageIdentity.DownloadString($manageIdentityUrl)
+            $keyVaultToken = ($resultManageIdentity | ConvertFrom-Json).access_token
+
+            Write-Output "Working with Key Vault: $env:KEY_VAULT_NAME"
+            $ciWebClient = New-Object System.Net.WebClient
+            $ciWebClient.headers["Authorization"] = "Bearer $keyVaultToken"
+
+            function GetSecretFromKeyVault($secretName) {
+              $secretUrl = "https://$($env:KEY_VAULT_NAME).vault.azure.net/secrets/$($secretName)?api-version=2016-10-01"
+              $resultSecret = $ciWebClient.DownloadString($secretUrl)
+              $secretValue = ($resultSecret | ConvertFrom-Json).value
+              return $secretValue
+            }
+
+            $logsStorageAccountName = GetSecretFromKeyVault "storage-account-name"
+            $storageAccountPrivateLink = "{0}.file.core.windows.net" -f "$logsStorageAccountName"
+            Write-Output "##vso[task.setvariable variable=STORAGE_ACCOUNT_PRIVATE_LINK]$storageAccountPrivateLink"
+
+            $logsSmbUsername = "Azure\{0}" -f "$logsStorageAccountName"
+            Write-Output "##vso[task.setvariable variable=LOGS_SMB_USERNAME]$logsSmbUsername"
+
+            $logsSmbPassword = GetSecretFromKeyVault "storage-account-primary-access-key"
+            $encryptedLogsSmbPassword  = $logsSmbPassword | ConvertTo-SecureString -AsPlainText -Force | ConvertFrom-SecureString
+            Write-Output "##vso[task.setvariable variable=ENCRYPTED_LOGS_SMB_PASSWORD;issecret=true]$encryptedLogsSmbPassword"
+
+            $logsFileShareName = GetSecretFromKeyVault "logs-file-share-name"
+            Write-Output "##vso[task.setvariable variable=LOGS_FILE_SHARE_NAME]$logsFileShareName"
+        env:
+          KEY_VAULT_NAME: $(key_vault_name)
+        displayName: "Access Secrets from Key Vault"
+
+      - task: PowerShell@2
+        inputs:
+          targetType: "inline"
+          script: |          
+            $buildId = $(resources.pipeline.DeployInnvovator.runID)            
+            $buildLogsUrl = "{0}{1}/_apis/build/builds/{2}/logs?api-version=6.0" -f "$(System.CollectionUri)", "$(System.TeamProject)", "$buildId"
+            $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
+            $headers.Add("Authorization", "Bearer $(System.AccessToken)")
+            try {
+              $buildLogsResponse = Invoke-WebRequest -Uri $buildLogsUrl -Headers $headers -Method Get
+            }
+            catch [System.Exception] {
+              Write-Output "Error Message: $($_.Exception.Message)"
+              Write-Output "StackTrace: $($_.Exception.StackTrace)"
+              exit 1
+            }
+            $parsedBuildLogsResponse = $buildLogsResponse | ConvertFrom-Json
+            $buildLogs  = $parsedBuildLogsResponse.value
+            $publishArtifactLogFileName = ".\BuildPipelinePublishArtifact.log"
+            foreach ($buildLog in $buildLogs) {
+              $logUrl = $buildLog.url
+              try {
+                Invoke-WebRequest -Uri $logUrl -Headers $headers -Method Get -OutFile $publishArtifactLogFileName
+              }
+              catch [System.Exception] {
+                Write-Output "Error Message: $($_.Exception.Message)"
+                Write-Output "StackTrace: $($_.Exception.StackTrace)"
+                exit 1
+              }
+              $publishArtifactsLogFile = Get-Content -Path $publishArtifactLogFileName |
+                Where-Object { $_ -like '*Starting: Publish Artifact to storage*' }
+              IF ([string]::IsNullOrWhitespace($publishArtifactsLogFile)) {
+                continue
+              }
+              else {
+                break
+              }
+            }
+
+            $atrifactsPublishedCheck = Get-Content -Path $publishArtifactLogFileName |
+              Where-Object { $_ -like '*Successfully published artifacts to*' }
+            IF ([string]::IsNullOrWhitespace($atrifactsPublishedCheck)) {
+              Write-Output "Artifacts not published successfully to storage account, Please select valid CI build"
+              exit 1
+            }
+            else {
+              $publishArtifactLogFileContent = Get-Content -Path $publishArtifactLogFileName | Where-Object { $_ -like '*New File*' } 
+              $UrlRegex = ".*:\\.*\\(.*.Package).([0-9.]*.-.*).nupkg";
+              if($publishArtifactLogFileContent -match $UrlRegex) {
+                $nugetPackageName = $($matches[1])
+                Write-Output "##vso[task.setvariable variable=NUGET_PACKAGE_NAME]$nugetPackageName"
+                $nugetPackageVersion = $($matches[2])
+                Write-Output "##vso[task.setvariable variable=NUGET_PACKAGE_VERSION]$nugetPackageVersion"
+              }
+              else {
+                Write-Error "Unable to find package Name and Version"
+                exit 1
+              }
+            }
+        displayName: "Get Package Details from Build"
+
+      - task: PowerShell@2
+        inputs:
+          targetType: 'inline'
+          script: |
+            $pipelinesUrl = "{0}{1}/_apis/pipelines?api-version=6.0-preview.1" -f  "$(System.CollectionUri)", "${env:INFRASTRUCTURE_PROJECT_NAME}"            
+            $token = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes(":${env:AZURE_DEVOPS_PAT}"))
+            $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
+            $headers.Add("Authorization", "Basic $token")
+            $headers.Add("Content-Type", "application/json")
+            try {
+              $pipelinesResponse = Invoke-WebRequest -Uri $pipelinesUrl -Headers $headers -Method Get
+            }
+            catch [System.Exception] {
+              Write-Output "Failed to get pipelines"
+              Write-Output "Error Message: $($_.Exception.Message)"
+              Write-Output "StackTrace: $($_.Exception.StackTrace)"
+              exit 1
+            }
+            $parsedPipelinesResponse = $pipelinesResponse | ConvertFrom-Json
+            $pipelines = $parsedPipelinesResponse.value
+            foreach ($pipeline in $pipelines) {
+              $pipelineName = $pipeline.name
+              if("$pipelineName".ToLower() -eq "deploytositinfrastructure") {
+                $pipelineId = $pipeline.id
+                Write-Output "##vso[task.setvariable variable=PIPELINE_ID]$pipelineId"
+                break
+              }
+            }
+        env:
+          INFRASTRUCTURE_PROJECT_NAME: $(infrastructure_project_name)
+          AZURE_DEVOPS_PAT: $(azure_devops_pat)            
+        displayName: "Get Infrastructure Pipeline Details"
+
+      - task: PowerShell@2
+        inputs:
+          targetType: "inline"
+          script: |
+            $buildNumber = $(resources.pipeline.DeployInnvovator.runName)
+            $logsFolderStructure = "Logs\DeployToSIT\{0}-{1}" -f "$(Build.BuildNumber)", "$buildNumber"
+            $logFileName = "deploy-innovator-sit-{0}-{1}.log" -f "$buildNumber", "$(Get-Date -f yyyyMMddhhmmss)"
+            $JSON = @{
+              "templateParameters"= @{
+                "nuget_package_name"="$(NUGET_PACKAGE_NAME)"
+                "nuget_package_version"="$(NUGET_PACKAGE_VERSION)"
+                "log_file_path"="$logsFolderStructure"
+                "log_file_name"="$logFileName"
+                "key_vault_name"="$env:KEY_VAULT_NAME"
+                "agent_pool_name"="$(agentPoolName)"
+              }
+            } | ConvertTo-Json -Depth 10
+
+            $token = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes(":$(AZURE_DEVOPS_PAT)"))
+            $patHeaders = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
+            $patHeaders.Add("Authorization", "Basic $token")
+            $patHeaders.Add("Content-Type", "application/json")
+
+            $buildUrl = "{0}{1}/_apis/pipelines/{2}/runs?api-version=6.1-preview.1" -f  "$(System.CollectionUri)", "${env:INFRASTRUCTURE_PROJECT_NAME}", "$(PIPELINE_ID)"
+            $runResponse = Invoke-RestMethod -Uri $buildUrl -Headers $patHeaders -Method 'POST' -Body $JSON
+
+            $runStatus = $($runResponse.state)
+            $runStatusURL = $($runResponse.url)
+            do {
+                if (-not[string]::IsNullOrEmpty($runStatusURL)) {
+                  try {
+                    $statusResponse = Invoke-RestMethod $runStatusURL -Method 'GET' -Headers $patHeaders
+                    $runStatus = $statusResponse.state
+                  }
+                  catch [System.Exception] {
+                    Write-Host "Error Message: $($_.Exception.Message)"
+                    Write-Host "StackTrace: $($_.Exception.StackTrace)"
+                    exit 1
+                  }
+                }
+                # Poll after every 60 seconds
+                start-sleep 60
+              } while ('inProgress' -eq $runStatus)
+
+            # Finding free letter disk
+            try {
+              $driveToMount = (Get-ChildItem function:[f-x]: -n | Where-Object { !(Test-Path $_) } | Get-Random)[0]
+            }
+            catch {
+              Write-Error "Free drive letter not found"
+              exit 1
+            }
+            
+            $secureLogSmbPassword = ConvertTo-SecureString $(ENCRYPTED_LOGS_SMB_PASSWORD)            
+            $logSmbPassword = [System.Net.NetworkCredential]::new("", $secureLogSmbPassword).Password
+
+            #Attach SMB share to pipeline
+            if ( !(Get-PSDrive | Where-Object { $_.Name -like $driveToMount })) {
+                $connectTestResult = Test-NetConnection -ComputerName $(STORAGE_ACCOUNT_PRIVATE_LINK) -Port 445
+                if ($connectTestResult.TcpTestSucceeded) {
+                    # Save the password so the drive will persist on reboot
+                    cmd.exe /C "cmdkey /add:`"$(STORAGE_ACCOUNT_PRIVATE_LINK)`" /user:`"$(LOGS_SMB_USERNAME)`" /pass:`"$($logSmbPassword)`""
+                    # Mount as Y drive
+                    New-PSDrive -Name $driveToMount -PSProvider FileSystem -Root "\\$(STORAGE_ACCOUNT_PRIVATE_LINK)\$(LOGS_FILE_SHARE_NAME)" -Persist
+                } else {
+                    Write-Error -Message "Unable to reach the Azure storage account via port 445. Check to make sure your organization or ISP is not blocking port 445, or use Azure P2S VPN, Azure S2S VPN, or Express Route to tunnel SMB traffic over a different port."
+                }
+            }
+            # Show Jenkins log in pipeline
+            Write-Output "Started retrieving jenkins log file from storage account"
+            $logsSourcePath = "{0}:\{1}\{2}" -f "$driveToMount", "$logsFolderStructure", "$logFileName"
+            Write-Output "Log File Location: $logsSourcePath"
+            $fileContent = Get-Content -Path $logsSourcePath -Delimiter "\n" 
+            Write-Output "$fileContent"
+
+            # Fail pipeline if remote execution throws error
+            if ("$($statusResponse.result)".ToLower() -ne "succeeded") {
+              throw "Deploy Innovator execution failed"        
+            }
+            else {
+              Write-Output "Success"
+              # Get Innovator url from Jenkins log file
+              $innovatorURLLogLine = Get-Content -Path $LogsSourcePath | Where-Object { $_ -like '*URL of configured Innovator is:*' }
+              $urlRegex = '((?:https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:, .;]\S+[-a-zA-Z0-9+&@#/%=~_|])';
+              if ($innovatorURLLogLine -match $urlRegex) {
+                $innovatorURL = $matches[0]
+                Write-Host "URL of configured Innovator is: $innovatorURL"
+              }
+            }
+        env:
+          INFRASTRUCTURE_PROJECT_NAME: $(infrastructure_project_name)
+          AZURE_DEVOPS_PAT: $(azure_devops_pat)
+          KEY_VAULT_NAME: $(key_vault_name)
+        displayName: "Run Infrastructure Pipeline"
+        enabled: True

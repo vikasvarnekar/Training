@@ -1,0 +1,12 @@
+﻿<AML>
+ <Item type="Identity" id="9A31744D064D41009A26E458CC7AB874" action="add">
+  <description>Manage Users and Identities</description>
+  <is_alias>0</is_alias>
+  <name>User Administrators</name>
+ </Item>
+ <Item type="Member" id="A519298F61244DEABBC9657C2B4B66FD" action="add">
+  <related_id keyed_name="Administrators" type="Identity">2618D6F5A90949BAA7E920D1B04C7EE1</related_id>
+  <sort_order>128</sort_order>
+  <source_id keyed_name="User Administrators" type="Identity">9A31744D064D41009A26E458CC7AB874</source_id>
+ </Item>
+</AML>

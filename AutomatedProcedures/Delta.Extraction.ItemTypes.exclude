@@ -1,0 +1,3 @@
+﻿# List of ItemTypes (each on new line) for which the whole item content will be transfered
+# to output file without delta extraction. Works for root and child item nodes in AML files
+Workflow Map Activity
