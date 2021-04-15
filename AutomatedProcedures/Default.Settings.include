@@ -268,7 +268,7 @@
 		Project.Prefix - the name is used as a prefix for generated Innovator instance names,
 		in order to not cause conflict if there are several CustomerRepositoryTemplate based repositories.
 	-->
-	<property name="Project.Prefix" overwrite="false" value="CRT" />
+	<property name="Project.Prefix" overwrite="false" value="MITSDE" />
 
 	<!--
 		Nuget.Publishing.Source - a nuget source where deployment package should be published. It can be either local or remote.
